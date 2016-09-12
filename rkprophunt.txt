@@ -1,0 +1,28 @@
+"rkprophunt"
+{
+  "base" "base"
+  "title" "rkPropHunt"
+  "maps" "^rkph_"
+  "menusystem" 1
+  
+  "settings"
+  {
+    1
+    {
+      "name" "rkph_timed"
+      "text" "Timed Rounds"
+      "help" ""
+      "type" "CheckBox"
+      "default" 0
+    }
+    
+    2
+    {
+      "name" "rkph_punish_dmg"
+      "text" "Punishment Damage"
+      "help" "The amount of damage taken for hurting a non-player prop"
+      "type" "Number"
+      "default" 5
+    }
+  }
+}

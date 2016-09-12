@@ -1,0 +1,231 @@
+{
+  "names": {
+    "Age of Chivalry": [ "aoc_" ],
+    "Alien Swarm": [ "lobby" ],
+
+    "Blade Symphony": [
+      "cp_docks",
+      "cp_parkour",
+      "cp_sequence",
+      "cp_terrace",
+      "cp_test",
+      "duel_",
+      "ffa_community",
+      "free_",
+      "practice_box",
+      "tut_training"
+    ],
+
+    "Counter-Strike": [
+      "ar_",
+      "cs_",
+      "de_",
+      "es_",
+      "fy_",
+      "gd_",
+      "training1"
+    ],
+
+    "Day of Defeat": [ "dod_" ],
+    "Dino D-Day": [ "ddd_" ],
+
+    "DIPRIP": [
+      "de_dam",
+      "dm_city",
+      "dm_refinery",
+      "dm_supermarket",
+      "dm_village",
+      "ur_city",
+      "ur_refinery",
+      "ur_supermarket",
+      "ur_village"
+    ],
+
+    "Dystopia": [
+      "dys_",
+      "pb_dojo",
+      "pb_rooftop",
+      "pb_round",
+      "pb_urbandome",
+      "sav_dojo6",
+      "varena"
+    ],
+
+    "Half-Life 2": [
+      "d1_",
+      "d2_",
+      "d3_"
+    ],
+
+    "Half-Life 2: Deathmatch": [
+      "dm_",
+      "halls3"
+    ],
+
+    "Half-Life 2: Episode 1": [ "ep1_" ],
+    "Half-Life 2: Episode 2": [ "ep2_" ],
+    "Half-Life 2: Episode 3": [ "ep3_" ],
+    "Half-Life 2: Lost Coast": [ "d2_lostcoast" ],
+
+    "Half-Life Deathmatch": [
+      "boot_camp",
+      "bounce",
+      "crossfire",
+      "datacore",
+      "frenzy",
+      "lambda_bunker",
+      "rapidcore",
+      "snarkpit",
+      "stalkyard",
+      "subtransit",
+      "undertow"
+    ],
+
+    "Insurgency": [ "ins_" ],
+    "Left 4 Dead": [ "l4d_" ],
+
+    "Left 4 Dead 2": [
+      "curling_stadium",
+      "tutorial_standards",
+      "tutorial_standards_vs"
+    ],
+
+    "Nuclear Dawn": [
+      "clocktower",
+      "coast",
+      "downtown",
+      "gate",
+      "hydro",
+      "metro",
+      "metro_training",
+      "oasis",
+      "oilfield",
+      "silo",
+      "sk_metro",
+      "training"
+    ],
+
+    "Pirates, Vikings, & Knights II": [
+      "bt_",
+      "lts_",
+      "te_",
+      "tw_"
+    ],
+
+    "Portal": [
+      "escape_",
+      "testchmb_"
+    ],
+
+    "Portal 2": [ "e1912" ],
+
+    "Team Fortress 2": [
+      "achievement_",
+      "arena_",
+      "cp_",
+      "ctf_",
+      "itemtest_",
+      "koth_",
+      "mvm_",
+      "pl_",
+      "plr_",
+      "rd_",
+      "pd_",
+      "sd_",
+      "tc_",
+      "tr_",
+      "trade_",
+      "pass_"
+    ],
+
+    "Zombie Panic! Source": [
+      "zpa_",
+      "zpl_",
+      "zpo_",
+      "zps_"
+    ],
+
+    "Bunny Hop": [ "bhop_" ],
+
+    "Cinema": [
+      "cinema_",
+      "theater_"
+    ],
+
+    "Climb": [ "xc_" ],
+
+    "Deathrun": [
+      "deathrun_",
+      "dr_"
+    ],
+
+    "Flood": [ "fm_" ],
+    "GMod Tower": [ "gmt_" ],
+
+    "Gun Game": [
+      "gg_",
+      "scoutzknivez"
+    ],
+
+    "Jailbreak": [
+      "ba_",
+      "jail_",
+      "jb_"
+    ],
+
+    "Minigames": [ "mg_" ],
+    "Pirate Ship Wars": [ "pw_" ],
+    "Prop Hunt": [ "ph_" ],
+    "Roleplay": [ "rp_" ],
+    "Sled Build": [ "slb_" ],
+    "Spacebuild": [ "sb_" ],
+    "Stop it Slender": [ "slender_" ],
+    "Stranded": [ "gms_" ],
+    "Surf": [ "surf_" ],
+    "The Stalker": [ "ts_" ],
+
+    "Zombie Survival": [
+      "zm_",
+      "zombiesurvival_",
+      "zs_"
+    ]
+  },
+
+  "patterns": {
+    "Alien Swarm": [ "^asi-" ],
+
+    "Half-Life": [
+      "^c[%d]a",
+      "^t0a"
+    ],
+
+    "Left 4 Dead 2": [ "^c[%d]m" ],
+
+    "Portal 2": [
+      "^mp_coop_",
+      "^sp_a"
+    ]
+  },
+
+  "name-excludes": [
+    "sdk_",
+    "test_",
+    "vst_",
+
+    "c4a1y",
+    "credits",
+    "d2_coast_02",
+    "d3_c17_02_camera",
+    "ep1_citadel_00_demo",
+    "intro",
+    "test"
+  ],
+
+  "pattern-excludes": [
+    "^background",
+    "^devtest",
+    "^ep1_background",
+    "^ep2_background",
+    "^styleguide"
+  ]
+}
