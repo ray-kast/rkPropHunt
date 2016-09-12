@@ -15,6 +15,16 @@ function teams.SetClass(teamId, class, inherit)
   end
 end
 
+function teams.SetClassForeach(teamIds, class, inherit)
+  print("Setting class for "..#teamIds.." team(s).");
+  PrintTable(teamIds);
+
+  for _, teamId in pairs(teamIds) do
+    print(string.format("Setting class for team %d", teamId));
+    teams.SetClass(teamId, class, inherit);
+  end
+end
+
 function teams._SetUp()
   team.SetUp(teams.Team1Idx, "Team Red", HSVToColor(0, .85, 1), true);
   team.SetUp(teams.Team2Idx, "Team Blue", HSVToColor(210, .95, .95), true);

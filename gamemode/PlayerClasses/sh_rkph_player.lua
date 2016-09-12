@@ -159,16 +159,6 @@ end
 
 --View table: angles, drawviewer, fov, origin, zfar, znear
 function RkphPlayer.CalcView3P(ply, mins, maxs, view)
-  if ply:GetIsBlinded() then
-    view.origin = Vector(math.huge, math.huge, math.huge);
-    view.angles = Angle(90, 0, 0);
-    view.znear = 1;
-    view.zfar = 1.1;
-    view.fov = 0;
-    view.drawviewer = false;
-    return;
-  end
-
   local dt = FrameTime();
   local preset = camPreset;
   local camMode = ply:GetCamMode();

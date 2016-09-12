@@ -3,7 +3,6 @@ rkplayer = {
   CamModeNWId = "rkph_CamMode",
   MetricOffsNWId = "rkph_MetricOffs",
   MetricHeightNWId = "rkph_MetricHeight",
-  IsBlindedNWId = "rkph_IsBlinded",
 };
 
 function rkplayer.SilentRespawn(ply, keepHealth)
@@ -93,14 +92,6 @@ if meta then
   
   function meta:SetMetricHeight(height)
     self:SetNWFloat(rkplayer.MetricHeightNWId, height);
-  end
-  
-  function meta:GetIsBlinded()
-    return self:GetNWBool(rkplayer.IsBlindedNWId);
-  end
-  
-  function meta:SetIsBlinded(blinded)
-    return self:SetNWBool(rkplayer.IsBlindedNWId, blinded);
   end
 else
   print("[WARNING] Unable to find player metatable!");

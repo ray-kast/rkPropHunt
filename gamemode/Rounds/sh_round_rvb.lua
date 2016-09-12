@@ -1,6 +1,6 @@
 local prePhase = {
   Label = "Preparing...",
-  Length = 10,
+  Length = 20,
 };
 local hidePhase = {
   Label = "Hide!",
@@ -51,6 +51,12 @@ function prePhase:Think()
     return;
   end
   
+  if #player.GetAll() < 2 then
+    timer.Pause(rounds.PhaseTimerId);
+  else
+    timer.UnPause(rounds.PhaseTimerId);
+  end
+  
   self:SetPhaseTime(timer.TimeLeft(rounds.PhaseTimerId));
 end
 
@@ -58,11 +64,18 @@ function prePhase:PhaseEnd()
   timer.Destroy(rounds.PhaseTimerId);
   
   if self.RoundState.WillTeam2Seek then
-    teams.SetClass(teams.Team1Idx, { HiderClass.Id }, true);
-    teams.SetClass(teams.Team2Idx, { SeekerClass.Id }, true);
+    self.RoundState.HidingTeams = { teams.Team1Idx };
+    self.RoundState.SeekingTeams = { teams.Team2Idx };
   else
-    teams.SetClass(teams.Team1Idx, { SeekerClass.Id }, true);
-    teams.SetClass(teams.Team2Idx, { HiderClass.Id }, true);
+    self.RoundState.HidingTeams = { teams.Team2Idx };
+    self.RoundState.SeekingTeams = { teams.Team1Idx };
+  end
+  
+  teams.SetClassForeach(self.RoundState.HidingTeams, { HiderClass.Id }, true);
+  teams.SetClassForeach(self.RoundState.SeekingTeams, { SeekerClass.Id }, true);
+  
+  for _, ply in player.GetAll() do
+    ply:Spawn();
   end
   
   self.RoundState.WillTeam2Seek = not self.RoundState.WillTeam2Seek;
@@ -77,11 +90,7 @@ function hidePhase:PhaseStart()
     state.MoveNext = true;
   end);
   
-  for _, ply in pairs(player.GetAll()) do
-    if player_manager.GetPlayerClass(ply) == SeekerClass.Id then
-      ply:SetIsBlinded(true);
-    end
-  end
+  teams.SetClassForeach(self.RoundState.SeekingTeams, { BlindedClass.Id }, true);
 end
 
 function hidePhase:Think()
@@ -98,9 +107,7 @@ function hidePhase:PlayerDeath(ply)
 end
 
 function hidePhase:PhaseEnd()
-  for _, ply in pairs(player.GetAll()) do
-    ply:SetIsBlinded(false);
-  end
+  teams.SetClassForeach(self.RoundState.SeekingTeams, { SeekerClass.Id }, true);
 end
 
 function seekPhase:PhaseStart()

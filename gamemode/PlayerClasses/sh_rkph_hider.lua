@@ -261,13 +261,8 @@ function HiderClass.Meta:KeyRelease(key)
   return true;
 end
 
-function HiderClass.Meta:CanPickupItem(ent)
-  return false;
-end
-
-function HiderClass.Meta:CanPickupWeapon(wep)
-  return false;
-end
+function HiderClass.Meta:CanPickupItem(ent) return false; end
+function HiderClass.Meta:CanPickupWeapon(wep) return false; end
 
 trylog.Call(function()
   player_manager.RegisterClass(HiderClass.Id, HiderClass.Meta, HiderClass.Base);
