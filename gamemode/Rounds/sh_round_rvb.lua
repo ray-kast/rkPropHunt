@@ -8,7 +8,7 @@ local hidePhase = {
 };
 local seekPhase = {
   Label = "Seek!",
-  Length = 90,
+  Length = 60 * 60,
 };
 
 local round = {
@@ -24,11 +24,15 @@ local rvb = {
   Data = round,
 };
 
+local dbg = true;
+
 rounds.RedVsBlue = rvb;
 
 function round:Init()
   self.RoundState.WillTeam2Seek = false;
 end
+
+function round:GetFirstPhase() return 1; end
 
 function prePhase:PhaseStart()
   self.PhaseState.MoveNext = false;
@@ -41,11 +45,11 @@ function prePhase:PhaseStart()
   
   teams.SetClass(teams.Team1Idx, { RkphPlayer.Id }, true);
   teams.SetClass(teams.Team2Idx, { RkphPlayer.Id }, true);
-  
-  game.CleanUpMap(false, { HiderEnt.Id, "player" });
 end
 
 function prePhase:Think()
+  if dbg then self:GotoPhase(3); end
+  
   if self.PhaseState.MoveNext then
     self:NextPhase();
     return;
@@ -74,7 +78,9 @@ function prePhase:PhaseEnd()
   teams.SetClassForeach(self.RoundState.HidingTeams, { HiderClass.Id }, true);
   teams.SetClassForeach(self.RoundState.SeekingTeams, { SeekerClass.Id }, true);
   
-  for _, ply in player.GetAll() do
+  game.CleanUpMap(false, { HiderEnt.Id, "player" });
+  
+  for _, ply in pairs(player.GetAll()) do
     ply:Spawn();
   end
   
@@ -118,6 +124,9 @@ function seekPhase:PhaseStart()
   timer.Create(rounds.PhaseTimerId, seekPhase.Length, 1, function()
     state.MoveNext = true;
   end);
+  
+  teams.SetClassForeach(self.RoundState.HidingTeams, { HiderClass.Id }, true);
+  teams.SetClassForeach(self.RoundState.SeekingTeams, { SeekerClass.Id }, true);
 end
 
 function seekPhase:Think()

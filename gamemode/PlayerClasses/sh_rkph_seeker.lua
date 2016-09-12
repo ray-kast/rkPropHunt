@@ -14,11 +14,7 @@ function SeekerClass.Meta:Setup()
 end
 
 function SeekerClass.Meta:Loadout()
-  self.Player:Give("weapon_crowbar");
-  self.Player:Give("weapon_357");
-  self.Player:Give("weapon_smg1");
-  self.Player:Give("weapon_shotgun");
-  self.Player:SetAmmo(1, "SMG1_Grenade");
+  self.Player:Give("weapon_rkph_punisher");
 end
 
 function SeekerClass.Meta:DealDamage(ent, dmg)

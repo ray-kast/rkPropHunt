@@ -16,11 +16,7 @@ function teams.SetClass(teamId, class, inherit)
 end
 
 function teams.SetClassForeach(teamIds, class, inherit)
-  print("Setting class for "..#teamIds.." team(s).");
-  PrintTable(teamIds);
-
   for _, teamId in pairs(teamIds) do
-    print(string.format("Setting class for team %d", teamId));
     teams.SetClass(teamId, class, inherit);
   end
 end

@@ -62,6 +62,16 @@ hook.PAdd("OnReloaded", "RkphSvInit_OnReload", function()
   print("-------------------- [SV] LUA RELOAD --------------------")
 end);
 
+-- local botName = "rookie1025";
+-- local rk1025;
+
+-- hook.PAdd("InitPostEntity", "RkphSvInit_InitPostEntity", function()
+  -- rk1025 = player.CreateNextBot(botName);
+  -- rkplayer.SetTeam(rk1025, teams.Team1Idx, true);
+-- end);
+
+
+
 -- hook.PAdd("PlayerButtonDown", "TEST", function(ply, btn)
   -- if btn != KEY_Q then return end
   -- for _, ent in pairs(ents.FindByClass("prop_physics*")) do

@@ -49,6 +49,8 @@ function closure:Phase()
 end
 
 function closure:GotoPhase(idx)
+  print(string.format("Beginning phase %d...", idx));
+
   if self.Round.Phases[idx] then
     if self:Phase() then self:Phase().PhaseEnd(self); end
     
@@ -125,6 +127,18 @@ function rounds.SetUp(id, data)
   local obj = { Phases = {} };
   
   print("Setting up round with "..#data.Phases.." phase(s).");
+  
+  for k, _ in pairs(rndProto) do
+    if data[k] then
+      if isfunction(data[k]) then
+        obj[k] = trylog.Wrap(data[k]);
+      else
+        obj[k] = data[k];
+      end
+    end
+  end
+  
+  setmetatable(obj, rndProto);
   
   for _, phData in ipairs(data.Phases) do
     table.insert(obj.Phases, rounds._MakePhase(phData));

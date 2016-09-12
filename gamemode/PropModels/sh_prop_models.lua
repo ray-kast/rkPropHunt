@@ -10,6 +10,7 @@ PropModels = {
     --"^func_", --In the event that it's not an internal model (don't know if that's a thing)
   },
   ClassExcludes = {
+    "^weapon_rkph_", --My SWEPs
     "door", --What's the point?
     HiderEnt.Id, --For obvious reasons
   },
