@@ -21,8 +21,8 @@ if SERVER then
   util.AddNetworkString(HiderClass.NoModelChangeId);
   
   function HiderClass.SetModel(ply, model, skin)
-    local hasEnt = ply:GetAttachedHider():IsHider();
-    local ent = HiderEnt.CreateForPlayer(ply); //Will not create hider if one exists
+    local hasEnt = ply:GetAttachedHider():IsHider(); --Used to determine proper reversion steps
+    local ent = HiderEnt.CreateForPlayer(ply); --Will not create hider if one exists
     local entModel = ent:GetModel();
     
     ent:SetModel(model);
@@ -65,7 +65,7 @@ if SERVER then
       
       net.Start(HiderClass.ModelChangeId);
       net.Send(ply);
-      
+  
       ply:SetMetricOffs(offs);
       ply:SetMetricHeight(height);
     else
@@ -89,12 +89,7 @@ if SERVER then
 end
 if CLIENT then
   net.PReceive(HiderClass.ModelChangeId, function()
-    //local offs = net.ReadDouble();
-    //local height = net.ReadDouble();
-    
     surface.PlaySound("ui/buttonclickrelease.wav");
-
-    //HiderClass.UpdateMetrics(LocalPlayer(), offs, height);
   end);
   
   net.PReceive(HiderClass.NoModelChangeId, function()
@@ -124,18 +119,24 @@ function HiderClass.GetMetrics(mins, maxs)
   return offs, size.z;
 end
 
-function HiderClass.UpdateMetrics(ply, offs, height)
-  HiderClass.UpdateHull(ply, offs, height);
-  
+function HiderClass.GetViewOffset(height)
   local vOffs = Vector(0, 0, height);
   
   if height > 36 then
     if height > 72 then
-      vOffs.z = math.max(ply:GetStepSize(), vOffs.z * .75);
+      vOffs.z = vOffs.z * .75;
     else
       vOffs.z = vOffs.z * (.75 + (height - 36) / (72 - 36) * (1 - .75));
     end
   end
+  
+  return vOffs;
+end
+
+function HiderClass.UpdateMetrics(ply, offs, height)
+  HiderClass.UpdateHull(ply, offs, height);
+  
+  local vOffs = HiderClass.GetViewOffset(height);
   
   if ply.defStepSize == nil then ply.defStepSize = ply:GetStepSize(); end
   if ply.defViewOffs == nil then ply.defViewOffs = ply:GetViewOffset(); end
@@ -204,7 +205,7 @@ function HiderClass.Meta:Spawn()
   
   self.Player.KeepMetrics = false;
   
-  //self.Player:SetCollisionGroup(COLLISION_GROUP_PASSABLE_DOOR);
+  --self.Player:SetCollisionGroup(COLLISION_GROUP_PASSABLE_DOOR);
 end
 
 function HiderClass.Meta:SetModel()
@@ -225,16 +226,14 @@ function HiderClass.Meta:Cleanup()
 end
 
 function HiderClass.Meta:CalcView(view)
-  //Just using OBBMins and OBBMaxs glitches out
+  --Just using OBBMins and OBBMaxs glitches out
   local offs, height = self.Player:GetMetricOffs(), self.Player:GetMetricHeight();
+  local vOffs = HiderClass.GetViewOffset(height);
   local mins, maxs = HiderClass.GetPropHull(offs, height);
   
-  RkphPlayer.CalcView3P(self.Player, mins, maxs, view);
-  
-  //print(tostring(view.znear).." "..tostring(view.zfar));
+  RkphPlayer.CalcView3P(self.Player, mins, maxs, view, vOffs);
   
   view.znear = math.min(view.znear, math.max(.1, math.min(offs, height) - 1));
-  //view.zfar = 64;
 end
 
 function HiderClass.Meta:KeyPress(key)

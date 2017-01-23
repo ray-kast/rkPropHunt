@@ -176,7 +176,7 @@ end);
 
 hook.PAdd("PlayerDeathThink", "RkphShRounds_PlayerDeathThink", function(ply)
   if rounds._Closure.Round then
-    return rounds._Closure:Phase().PlayerDeath(rounds._Closure, ply);
+    return rounds._Closure:Phase().PlayerDeathThink(rounds._Closure, ply);
   end
 end);
 

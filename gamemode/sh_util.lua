@@ -5,6 +5,11 @@ function util.DiffAngle(a, b)
     math.AngleDifference(a.r, b.r));
 end
 
+function util.LogisticSaturate(val, lim)
+  if lim == 0 then return 0; end
+  return (2 / (1 + math.exp(val * -2 / lim)) - 1) * lim;
+end
+
 function util.filterStr(str, filters, excludes)
   if excludes then
     for _, exclude in pairs(excludes) do

@@ -53,21 +53,34 @@ hook.Add("PreDrawHalos", "RkphClHud_PreDrawHalos", function()
   local ply = LocalPlayer();
   
   -- if player_manager.GetPlayerClass(ply) == HiderClass.Id then
-    local trargs = util.GetPlayerTrace(ply);
-    
-    trargs.mask = MASK_ALL;
+    local trargs = {
+      start = ply:EyePos(),
+      endpos = ply:EyePos() + ply:GetAimVector() * 256,
+      filter = ply,
+      mask = -1,
+      ignoreworld = false,
+    };
     
     local trace = util.TraceLine(trargs);
     
-    local ent = nil;
-    if not (trace.Hit and trace.Entity) then return; end
-    if trace.Entity:IsPlayer() and player_manager.GetPlayerClass(trace.Entity) == HiderClass.Id then
-      ent = trace.Entity:GetAttachedHider();
-    elseif trace.Entity:GetClass() == HiderEnt.Id or util.filterStr(trace.Entity:GetClass(), PropModels.ClassFilters, PropModels.ClassExcludes) then
-      ent = trace.Entity;
+    if not trace.Hit then return; end
+    
+    local ent = trace.Entity;
+    
+    if ent:IsPlayer() and player_manager.GetPlayerClass(ent) == HiderClass.Id then
+      ent = ent:GetAttachedHider();
+    else
+      local class = ent:GetClass();
+      
+      if not (class == HiderEnt.Id or util.filterStr(class, PropModels.ClassFilters, PropModels.ClassExcludes)) then
+        ent = nil;
+      end
     end
     
-    if ent then halo.Add({ ent }, Color(0, 127, 255), 1, 1, 2, true, true); end
+    if ent then
+      --chat.AddText("[ENTITY TRACE]", Color(0, 127, 255), tostring(ent))
+      halo.Add({ ent }, Color(0, 127, 255), 1, 1, 2, true, true);
+    end
   -- end
 end);
 

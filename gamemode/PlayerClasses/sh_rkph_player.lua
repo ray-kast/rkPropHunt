@@ -34,7 +34,7 @@ function CheckJumpButton(ply, mv, height)
   
   if ply:WaterLevel() >= 2 then
     ply:SetGroundEntity(nil);
-    ply.airjumps = 1; //If a player is stuck in the pool, allow them an airjump to get out
+    ply.airjumps = 1; --If a player is stuck in the pool, allow them an airjump to get out
     
     local waterType = util.PointContents(ply:GetPos());
     
@@ -108,14 +108,21 @@ end
 local initView = true;
 
 local camPresetDefault = {
-  dollyRadiusPadding = 72,
+  dollyRadiusPadding = 36,
+  dollyRadiusVelocityFactorLimit = 2,
+  dollyRadiusVelocityFactorScale = .005,
+  dollyRadiusVelocityFactorSpeed = 1,
+  sprintDollyZoomFactor = 15,
+  dollyZoomSpeed = 25,
+  baseDollyRadiusSpeed = 10,
   eyeAngleSpeed = 30,
   eyeAngleOffsetSpeed = 8,
   offsetSpaceAngleSpeed = 10,
-  camOffsetSpeed = 10,
-  camTargetOffsetSpeed = 15,
+  camOffsetSpeed = 15,
+  camOffsetLimit = 30,
+  camTargetOffsetSpeed = 20,
+  camTargetOffsetLimit = 5,
   camHullSize = 8,
-  dollyRadiusSpeed = 10,
   netOffsetFactorAttack = 45,
   netOffsetFactorDecay = 3,
   netOffsetFactorSpeed = 10,
@@ -123,33 +130,47 @@ local camPresetDefault = {
 
 local camPresetCinematic = {
   dollyRadiusPadding = 72,
+  dollyRadiusVelocityFactorLimit = 2,
+  dollyRadiusVelocityFactorScale = .005,
+  dollyRadiusVelocityFactorSpeed = 1,
+  sprintDollyZoomFactor = 45,
+  dollyZoomSpeed = 2,
+  baseDollyRadiusSpeed = 2,
   eyeAngleSpeed = 5,
   eyeAngleOffsetSpeed = 5,
   offsetSpaceAngleSpeed = 1,
   camOffsetSpeed = 2,
+  camOffsetLimit = 75,
   camTargetOffsetSpeed = 3,
+  camTargetOffsetLimit = 10,
   camHullSize = 12,
-  dollyRadiusSpeed = 2,
-  netOffsetFactorAttack = 2,
+  netOffsetFactorAttack = 6,
   netOffsetFactorDecay = 1,
   netOffsetFactorSpeed = 5,
 };
 
 local camPresetSharp = {
   dollyRadiusPadding = 36,
+  dollyRadiusVelocityFactorLimit = 2,
+  dollyRadiusVelocityFactorScale = .005,
+  dollyRadiusVelocityFactorSpeed = 2,
+  sprintDollyZoomFactor = 0,
+  dollyZoomSpeed = math.huge,
+  baseDollyRadiusSpeed = 20,
   eyeAngleSpeed = math.huge,
   eyeAngleOffsetSpeed = math.huge,
   offsetSpaceAngleSpeed = math.huge,
   camOffsetSpeed = 30,
+  camOffsetLimit = 5,
   camTargetOffsetSpeed = 30,
+  camTargetOffsetLimit = 3,
   camHullSize = 8,
-  dollyRadiusSpeed = 20,
   netOffsetFactorAttack = math.huge,
   netOffsetFactorDecay = 20,
   netOffsetFactorSpeed = math.huge,
 };
 
-local camPreset = camPresetDefault;
+local camPreset = camPresetCinematic;
 
 function RkphPlayer._CamExpDecay(dt, speed)
   if speed == math.huge then return 0; end
@@ -158,7 +179,7 @@ function RkphPlayer._CamExpDecay(dt, speed)
 end
 
 --View table: angles, drawviewer, fov, origin, zfar, znear
-function RkphPlayer.CalcView3P(ply, mins, maxs, view)
+function RkphPlayer.CalcView3P(ply, mins, maxs, view, vOffs)
   local dt = FrameTime();
   local preset = camPreset;
   local camMode = ply:GetCamMode();
@@ -180,15 +201,25 @@ function RkphPlayer.CalcView3P(ply, mins, maxs, view)
   local size = maxs - mins;
   local viewOffs = ply:GetCurrentViewOffset();
   
-  local dollyRadius;
+  if vOffs then viewOffs = vOffs; end
   
-  --Calculate base dolly radius
+  local fovOffs = 0;
+  
+  if ply:KeyDown(IN_SPEED) then fovOffs = math.min(179 - view.fov, preset.sprintDollyZoomFactor); end
+  
+  local dollyZoomFactor
+  
+  local baseDollyRadius, dollyRadiusVelocityFactor;
+  
+  --Calculate dolly radius components
   do
     local xDist = math.max(math.abs(viewOffs.x - mins.x), math.abs(maxs.x - viewOffs.x));
     local yDist = math.max(math.abs(viewOffs.y - mins.y), math.abs(maxs.y - viewOffs.y));
     local zDist = math.max(math.abs(viewOffs.z - mins.z), math.abs(maxs.z - viewOffs.z));
     
-    dollyRadius = math.sqrt(xDist * xDist + yDist * yDist + zDist * zDist) + preset.dollyRadiusPadding;
+    baseDollyRadius = math.sqrt(xDist * xDist + yDist * yDist + zDist * zDist);
+    
+    dollyRadiusVelocityFactor = ply:GetVelocity():Length() * preset.dollyRadiusVelocityFactorScale;
   end
   
   local netOffsetFactor = 0;
@@ -199,10 +230,13 @@ function RkphPlayer.CalcView3P(ply, mins, maxs, view)
       eyeAngleOffset = eyeAngleOffset,
       offsetSpaceAngle = offsetSpaceAngle,
       camOffset = Vector(),
+      angularOffsetCorrection = Vector(),
       viewOrigin = view.origin,
       camTarget = camTarget,
       camTargetOffset = Vector(),
-      dollyRadius = dollyRadius,
+      baseDollyRadius = baseDollyRadius,
+      dollyRadiusVelocityFactor = dollyRadiusVelocityFactor,
+      fovOffs = fovOffs,
       netOffsetFactor = netOffsetFactor,
     };
     
@@ -241,21 +275,88 @@ function RkphPlayer.CalcView3P(ply, mins, maxs, view)
     cam.camOffset = cam.camOffset * RkphPlayer._CamExpDecay(dt, preset.camOffsetSpeed);
     cam.camTargetOffset = cam.camTargetOffset * RkphPlayer._CamExpDecay(dt, preset.camTargetOffsetSpeed);
   else
-    cam.camOffset = (cam.camOffset + worldToOffsetMat * (cam.viewOrigin - view.origin)) * RkphPlayer._CamExpDecay(dt, preset.camOffsetSpeed);
-    cam.camTargetOffset = (cam.camTargetOffset + worldToOffsetMat * (cam.camTarget - camTarget)) * RkphPlayer._CamExpDecay(dt, preset.camTargetOffsetSpeed);
+    local offsSpeed = preset.camOffsetSpeed * (1 + (cam.viewOrigin - view.origin):Length() * dt);
+    local targetOffsSpeed = preset.camTargetOffsetSpeed * (1 + (cam.camTarget - camTarget):Length() * dt);
+    cam.camOffset = (cam.camOffset + worldToOffsetMat * (cam.viewOrigin - view.origin)) * RkphPlayer._CamExpDecay(dt, offsSpeed);
+    cam.camTargetOffset = (cam.camTargetOffset + worldToOffsetMat * (cam.camTarget - camTarget)) * RkphPlayer._CamExpDecay(dt, targetOffsSpeed);
   end
   cam.viewOrigin = view.origin;
   cam.camTarget = camTarget;
   
-  --Calculate dolly radius
-  cam.dollyRadius = dollyRadius + RkphPlayer._CamExpDecay(dt, preset.dollyRadiusSpeed) * (cam.dollyRadius - dollyRadius);
+  cam.baseDollyRadius = baseDollyRadius + RkphPlayer._CamExpDecay(dt, preset.baseDollyRadiusSpeed) * (cam.baseDollyRadius - baseDollyRadius);
   
-  --Calculate net camera offset from dolly and origin offset
-  local camOriginOffset = finalEyeAngle:Forward() * -cam.dollyRadius + offsetToWorldMat * cam.camOffset;
+  cam.dollyRadiusVelocityFactor = dollyRadiusVelocityFactor + RkphPlayer._CamExpDecay(dt, preset.dollyRadiusVelocityFactorSpeed) * (cam.dollyRadiusVelocityFactor - dollyRadiusVelocityFactor);
+  
+  --Calculate overall dolly radius
+  local dollyRadius = cam.baseDollyRadius * (1 + util.LogisticSaturate(cam.dollyRadiusVelocityFactor, preset.dollyRadiusVelocityFactorLimit)) + preset.dollyRadiusPadding;
+  
+  cam.fovOffs = fovOffs + RkphPlayer._CamExpDecay(dt, preset.dollyZoomSpeed) * (cam.fovOffs - fovOffs);
+  
+  --Apply dolly-zoom factor
+  dollyRadius = dollyRadius * (math.tan(math.rad(view.fov / 2)) / math.tan(math.rad((view.fov + cam.fovOffs) / 2)));
+  
+  local camDollyOffset = finalEyeAngle:Forward() * -dollyRadius;
+  local camWorldOffset = offsetToWorldMat * cam.camOffset;
+  local camTargetWorldOffset = offsetToWorldMat * cam.camTargetOffset;
 
-  --Calculate lookat angle
-  local camAngle = (offsetToWorldMat * cam.camTargetOffset - camOriginOffset):AngleEx(eyeToWorldMat * Vector(0, 0, 1));
+  --Calculate net camera offset from dolly and origin offset
+  local camOriginOffset = camDollyOffset + camWorldOffset;
   
+  --Clamp camera drift so the player stays in view
+  do
+    local camDollyAxis = camDollyOffset:GetNormalized();
+    local camOffsetAxis = camOriginOffset:GetNormalized();
+    local camOffsetAngle = math.acos(math.max(-1, math.min(1, camDollyAxis:Dot(camOffsetAxis))));
+    local camOffsetAngleAxis = camDollyAxis:Cross(camOffsetAxis);
+    camOffsetAngleAxis:Normalize();
+
+    local camOffsetLength = camOriginOffset:Length();
+    local camOffsetAdjacent = camOffsetLength * math.cos(camOffsetAngle);
+    
+    local lim, knee = 36, 36;
+    local thresh = lim + knee;
+
+    --Keep the camera from moving to close to the player
+    if camOffsetAdjacent < thresh then
+      local bleedSat = util.LogisticSaturate(thresh - camOffsetAdjacent, knee);
+
+      camOffsetAdjacent = thresh - bleedSat;
+
+      --Prevent the camera whipping around at close quarters
+      camOffsetAngle = camOffsetAngle * (1 - bleedSat / knee);
+    end
+
+    local camOffsetAngleSat = util.LogisticSaturate(math.deg(camOffsetAngle), preset.camOffsetLimit);
+
+    camOriginOffset = camDollyAxis * (camOffsetAdjacent / math.cos(math.rad(camOffsetAngleSat)));
+
+    local angles = Angle();
+    angles:RotateAroundAxis(camOffsetAngleAxis, camOffsetAngleSat);
+    camOriginOffset:Rotate(angles);
+  end
+
+  local camAngle;
+
+  --Calculate clamped lookat angle
+  do
+    local camLookatAxis = -camOriginOffset:GetNormalized();
+    local camLookatOffsetAxis = (camTargetWorldOffset - camOriginOffset):GetNormalized();
+    local camLookatAngle = math.acos(math.max(-1, math.min(1, camLookatAxis:Dot(camLookatOffsetAxis))));
+    local camLookatAngleAxis = camLookatAxis:Cross(camLookatOffsetAxis);
+    camLookatAngleAxis:Normalize();
+
+    local camLookatAngleSat = util.LogisticSaturate(math.deg(camLookatAngle), preset.camTargetOffsetLimit);
+
+    local camLookat = Vector();
+    camLookat:Set(camLookatAxis);
+
+    local angles = Angle();
+    angles:RotateAroundAxis(camLookatAngleAxis, camLookatAngleSat);
+    camLookat:Rotate(angles);
+
+    camAngle = camLookat:AngleEx(eyeToWorldMat * Vector(0, 0, 1));
+  end
+
   if first then
     -- ========== Prevent the camera from moving away from its origin ==========
     
@@ -280,13 +381,17 @@ function RkphPlayer.CalcView3P(ply, mins, maxs, view)
     --Calculate projected camera position
     local endPos = view.origin + camOriginOffset;
     
+    local excl = ents.FindByClass(HiderEnt.Id);
+    
+    table.insert(excl, ply);
+    
     --Try tracing the camera hull (Inconsistent behavior in multiplayer)
     local trace = util.TraceHull({
       start = view.origin,
       endpos = endPos,
       mins = tmins,
       maxs = tmaxs,
-      filter = { ply },
+      filter = excl,
       mask = MASK_ALL,
       ignoreworld = false,
     });
@@ -296,7 +401,7 @@ function RkphPlayer.CalcView3P(ply, mins, maxs, view)
       trace = util.TraceLine({
         start = view.origin,
         endpos = endPos,
-        filter = { ply },
+        filter = excl,
         mask = MASK_ALL,
         ignoreworld = false,
       });
@@ -316,197 +421,16 @@ function RkphPlayer.CalcView3P(ply, mins, maxs, view)
     
     cam.netOffsetFactor = netOffsetFactor + RkphPlayer._CamExpDecay(dt, speed) * (cam.netOffsetFactor - netOffsetFactor);
   end
-  
+
   --Switch to first-person hands if the camera is centered
   view.drawviewer = math.abs(camOriginOffset:Length() * cam.netOffsetFactor) >= 1;
   
   view.origin = view.origin + camOriginOffset * cam.netOffsetFactor; --Apply the camera offset
-  view.angles = (view.angles - eyeAngle) + camAngle; --Add hit angles, etc.
+  view.angles = camAngle + ply:GetViewPunchAngles(); --Add punch angles
+  view.fov = view.fov + cam.fovOffs;
   
   ply.camPos = view.origin; --For prop transparency functionality
 end
-
--- function RkphPlayer._CalcView3P(ply, mins, maxs, view)
-  -- if ply.camOrigin == nil then ply.camOrigin = view.origin; end
-  -- if ply.camOffs == nil then ply.camOffs = 0; end
-  -- if ply.camThetaOffs == nil then ply.camThetaOffs = Angle(0, 0, 0); end
-  -- if ply.camAngOffs == nil then ply.camAngOffs = Angle(0, 0, 0); end
-  -- if ply.camFovOffs == nil then ply.camFovOffs = 0; end
-  -- if ply.camCounterRoll == nil then ply.camCounterRoll = 0; end
-  
-  -- local camMode = ply:GetCamMode();
-  -- local first, third, second = camMode == 0, camMode == 1, camMode == 2;
-  -- local spectator = ply:GetObserverMode() != OBS_MODE_NONE;
-  
-  -- local dt = FrameTime();
-  
-  -- local offs = 0;
-  -- local theta = ply:EyeAngles();
-  -- local thetaOffs = Angle(0, 0, 0);
-  -- local angOffs = Angle(0, 0, 0);
-  -- local target = view.origin;
-  -- local fovOffs = 0;
-  -- local followPlayer = not (first or (third and not cin))
-  
-  -- if ply:KeyDown(IN_SPEED) then
-    -- fovOffs = math.min(179 - view.fov, 30);
-  -- end
-  
-  -- local speed = fovSpeed;
-  -- if cin then speed = cinFovSpeed; end
-  
-  -- ply.camFovOffs = fovOffs + math.pow(.5, dt * speed) * (ply.camFovOffs - fovOffs);
-  
-  -- local fovOld, fov, fovHard = view.fov, view.fov + ply.camFovOffs, view.fov + fovOffs;
-  
-  -- local fovFac = math.tan(math.rad(fovOld / 2)) / math.tan(math.rad(fov / 2)) - 1;
-  -- local fovFacHard = math.tan(math.rad(fovOld / 2)) / math.tan(math.rad(fovHard / 2)) - 1;
-  
-  -- //Account for the camera being offset while climbing stairs
-  -- if not followPlayer then target = ply:GetEyeTrace().HitPos + view.origin - ply:GetPos() - ply:GetCurrentViewOffset(); end
-  
-  -- if ply.camTheta == nil then ply.camTheta = theta; end
-  -- if ply.camTarget == nil then ply.camTarget = target; end
-  
-  -- if third or second then
-    -- if second then
-      -- theta.y = theta.y + 180;
-      -- angOffs.y = 0;
-    -- end
-    
-    -- local size = maxs - mins;
-    -- local viewOffs = ply:GetCurrentViewOffset();
-    -- local tmaxs, tmins = maxs - viewOffs, mins - viewOffs;
-    
-    -- tmins.x = math.max(-8, tmins.x);
-    -- tmins.y = math.max(-8, tmins.y);
-    -- tmins.z = math.max(-8, tmins.y);
-    
-    -- tmaxs.x = math.min(8, tmaxs.x);
-    -- tmaxs.y = math.min(8, tmaxs.y);
-    -- tmaxs.z = math.min(8, tmaxs.z);
-    
-    -- offs = -(math.max(size.x, size.y) * 1.5 + 64);
-    
-    -- RkphPlayer._UpdateCamTheta(ply, dt, theta);
-    
-    -- -- if viewOffs.z < 36 and not (cin or spectator) then
-      -- -- local vec = ply.camTheta:Forward() * -offs;
-      
-      -- -- vec.z = vec.z - 72;
-      
-      -- -- offs = -vec:Length();
-      -- -- thetaOffs.p = vec:Angle().p - ply.camTheta.p;
-    -- -- end
-    
-    -- RkphPlayer._UpdateCamThetaOffs(ply, dt, thetaOffs);
-    
-    -- if not spectator then
-      -- local endPos = view.origin + (theta + thetaOffs):Forward() * offs + theta:Forward() * offs * fovFacHard;
-      -- local trace = util.TraceHull({
-        -- start = view.origin,
-        -- endpos = endPos,
-        -- maxs = tmaxs,
-        -- mins = tmins,
-        -- filter = { ply },
-        -- mask = MASK_ALL,
-        -- ignoreworld = false,
-      -- });
-      
-      -- if not trace.Hit or trace.Fraction == 1 then
-        -- trace = util.TraceLine({
-          -- start = view.origin,
-          -- endpos = endPos,
-          -- filter = { ply },
-          -- mask = MASK_ALL,
-          -- ignoreworld = false,
-        -- });
-      -- end
-      
-      -- if trace.Hit then
-        -- offs = offs * trace.Fraction;      
-      -- end
-    -- end
-  -- end
-  
-  -- local dAngOffs = util.DiffAngle(ply.camAngOffs, angOffs);
-  
-  -- if first then
-    -- ply.camOrigin = view.origin;
-    -- ply.camTarget = target;
-    -- RkphPlayer._UpdateCamTheta(ply, dt, theta);
-    -- RkphPlayer._UpdateCamThetaOffs(ply, dt, thetaOffs);
-  -- else
-    -- speed = originSpeed;
-    -- if cin then speed = cinOriginSpeed; end
-  
-    -- ply.camOrigin = view.origin + math.pow(.5, dt * speed) * (ply.camOrigin - view.origin);
-    
-    -- speed = targetSpeed;
-    -- if cin then speed = cinTargetSpeed; end
-    
-    -- if followPlayer then target = target + theta:Forward() * 8; end
-    
-    -- ply.camTarget = target + math.pow(.5, dt * speed) * (ply.camTarget - target);
-  -- end
-  
-  -- local offsSpeed = offsUpSpeed;
-  
-  -- if math.abs(offs) < math.abs(ply.camOffs) then
-    -- if cin then
-      -- offsSpeed = cinOffsDnSpeed;
-    -- else
-      -- offsSpeed = offsDnSpeed;
-    -- end
-  -- elseif cin then
-    -- offsSpeed = cinOffsUpSpeed;
-  -- end
-
-  -- ply.camOffs = offs + math.pow(.5, dt * offsSpeed) * (ply.camOffs - offs);
-  
-  -- speed = angOffsSpeed;
-  -- if cin then speed = cinAngOffsSpeed; end
-  
-  -- ply.camAngOffs = angOffs + math.pow(.5, dt * speed) * dAngOffs;
-  
-  -- ply.camPos = ply.camOrigin + (ply.camTheta + ply.camThetaOffs):Forward() * ply.camOffs + ply.camTheta:Forward() * ply.camOffs * fovFac;
-  
-  -- --local camPosHard = view.origin + (theta + thetaOffs):Forward() * offs + theta:Forward() * offs * fovFacHard;
-  
-  -- local look = (ply.camTarget - ply.camPos):Angle();
-  -- --local lookHard = (target - camPosHard):Angle();
-  
-  -- if second or third then
-    -- //Prevent the camera spinning wildly when moving while looking up or down
-    -- local fac = math.sin(math.rad(look.p));
-    -- local counterFac = math.cos(math.rad(look.p));
-    
-    -- counterFac = math.max(0, (counterFac - .9) * (1 - .9));    
-    
-    -- local roll = math.fmod(math.AngleDifference(look.y, ply.camTheta.y), 180) * fac;
-    
-    -- local counterRoll = roll * counterFac;
-    
-    -- --print(string.format("look: %.2f; theta: %.2f", look.y, ply.camTheta.y));
-    
-    -- local dCounterRoll = math.AngleDifference(ply.camCounterRoll, counterRoll);
-    
-    -- local speed = 5;
-    
-    -- if (counterRoll >= 0 and ply.camCounterRoll > counterRoll) or (counterRoll <= 0 and ply.camCounterRoll < counterRoll) then
-      -- speed = 10;
-    -- end
-    
-    -- ply.camCounterRoll = counterRoll + math.pow(.5, dt * speed) * dCounterRoll;
-    
-    -- look:RotateAroundAxis(look:Forward(), roll - ply.camCounterRoll);
-  -- end
-  
-  -- view.origin = ply.camPos;
-  -- view.angles = look + ply.camAngOffs + ply:GetViewPunchAngles();
-  -- view.fov = view.fov + ply.camFovOffs;
-  -- view.drawviewer = math.abs(ply.camOffs) >= 1;
--- end
 
 function RkphPlayer.Meta:Setup() end
 
